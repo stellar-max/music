@@ -816,3 +816,9 @@ def ensure_valid_db():
         print("✅ Removed corrupt database. It will be recreated on init.")
     except Exception as e:
         print(f"⚠️ Unexpected error: {e}")
+
+def init_db():
+    # Ensure we have a valid database file
+    ensure_valid_db()
+    
+    # ... rest of your init_db code ...
