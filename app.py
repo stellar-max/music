@@ -795,3 +795,24 @@ if __name__ == '__main__':
     host = os.environ.get('HOST', '127.0.0.1')
     
     socketio.run(app, debug=debug_mode, port=port, host=host)
+
+def ensure_valid_db():
+    """Check if music.db is valid SQLite, delete and recreate if corrupt."""
+    db_file = 'music.db'
+    if not os.path.exists(db_file):
+        return  # No file, will be created later
+    
+    try:
+        # Try to open and run a simple query
+        conn = sqlite3.connect(db_file)
+        c = conn.cursor()
+        c.execute("SELECT name FROM sqlite_master LIMIT 1")
+        c.fetchone()
+        conn.close()
+    except sqlite3.DatabaseError:
+        # File exists but is corrupt
+        print(f"⚠️ Database file '{db_file}' is corrupt. Deleting...")
+        os.remove(db_file)
+        print("✅ Removed corrupt database. It will be recreated on init.")
+    except Exception as e:
+        print(f"⚠️ Unexpected error: {e}")
