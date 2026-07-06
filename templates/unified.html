@@ -1,1 +1,604 @@
-/* Placeholder for templates/unified.html */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% if page_title %}{{ page_title }} • swagPlayer{% else %}swagPlayer • Premium Music{% endif %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div id="app" class="min-h-screen bg-gradient-to-b from-[#0a0a0f] to-[#1a1a2e]">
+        
+        <!-- ========== HEADER / NAV ========== -->
+        <header class="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-2 text-white font-bold text-xl">
+                    <span class="text-2xl">🎵</span>
+                    <span class="bg-gradient-to-r from-[#6C63FF] to-[#FF6B6B] bg-clip-text text-transparent">swagPlayer</span>
+                </a>
+                
+                <!-- Search Bar -->
+                <div class="hidden md:flex flex-1 max-w-md mx-4">
+                    <form action="/" method="GET" class="w-full">
+                        <div class="relative">
+                            <input type="text" name="q" placeholder="Search tracks, albums, artists..." 
+                                   value="{{ search_query or '' }}"
+                                   class="w-full bg-white/5 border border-white/10 rounded-full py-2 px-4 pl-10 text-white placeholder-gray-400 focus:outline-none focus:border-[#6C63FF] transition">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Right Actions -->
+                <div class="flex items-center gap-3">
+                    {% if current_user %}
+                        <a href="/rooms" class="text-white/70 hover:text-white transition text-sm flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10">
+                            <i class="fas fa-users text-[#6C63FF]"></i>
+                            <span class="hidden sm:inline">Rooms</span>
+                        </a>
+                        <div class="relative group">
+                            <button class="w-9 h-9 rounded-full overflow-hidden border-2 border-[#6C63FF] hover:border-[#FF6B6B] transition">
+                                {% if current_user.avatar_url %}
+                                    <img src="{{ current_user.avatar_url }}" alt="Avatar" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full bg-gradient-to-br from-[#6C63FF] to-[#FF6B6B] flex items-center justify-center text-white font-bold text-sm">
+                                        {{ current_user.display_name[0] if current_user.display_name else 'U' }}
+                                    </div>
+                                {% endif %}
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-[#1a1a2e] border border-white/10 rounded-xl shadow-2xl py-2 hidden group-hover:block">
+                                <div class="px-4 py-2 border-b border-white/5">
+                                    <p class="text-white text-sm font-medium">{{ current_user.display_name }}</p>
+                                    <p class="text-gray-400 text-xs">@{{ current_user.nickname }}</p>
+                                </div>
+                                <a href="/user/{{ current_user.nickname }}" class="block px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition">My Library</a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition">Logout</button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="/app" class="text-sm text-white/70 hover:text-white transition flex items-center gap-2 px-4 py-2 rounded-full bg-[#6C63FF]/20 hover:bg-[#6C63FF]/30">
+                            <i class="fab fa-telegram"></i>
+                            Login
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+        
+        <!-- ========== MAIN CONTENT ========== -->
+        <main class="pt-20 pb-32 px-4 max-w-7xl mx-auto">
+            
+            <!-- ===== PLAYER MODE (Single Track or Album) ===== -->
+            {% if mode == 'player' %}
+                
+                {% if shared_track %}
+                    <!-- Single Track Player -->
+                    {% include 'components/player_card.html' with context %}
+                {% elif shared_album %}
+                    <!-- Album Player -->
+                    {% include 'components/album_card.html' with context %}
+                {% endif %}
+                
+            <!-- ===== LIBRARY MODE ===== -->
+            {% else %}
+                
+                <!-- Welcome / Greeting -->
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-white">
+                        {% if search_query %}
+                            Results for "{{ search_query }}"
+                        {% else %}
+                            {% if current_user %}
+                                Welcome back, {{ current_user.display_name }} 👋
+                            {% else %}
+                                Discover Music 🎵
+                            {% endif %}
+                        {% endif %}
+                    </h1>
+                    <p class="text-gray-400 mt-1">{% if search_query %}Found tracks and albums matching your search{% else %}Explore tracks and albums from the community{% endif %}</p>
+                </div>
+                
+                <!-- Tabs -->
+                <div class="flex gap-1 mb-6 bg-white/5 rounded-full p-1 max-w-xs">
+                    <button class="tab-btn active flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="tracks">
+                        <i class="fas fa-music mr-1.5"></i> Tracks
+                    </button>
+                    <button class="tab-btn flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="albums">
+                        <i class="fas fa-compact-disc mr-1.5"></i> Albums
+                    </button>
+                </div>
+                
+                <!-- Tracks Grid -->
+                <div id="tracks-tab" class="tab-content">
+                    {% if tracks %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {% for track in tracks %}
+                                {% include 'components/track_card.html' with context %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16 text-gray-400">
+                            <i class="fas fa-music text-5xl mb-4 opacity-30"></i>
+                            <p>No tracks found</p>
+                            {% if current_user %}
+                                <a href="#" onclick="document.getElementById('uploadModal').classList.remove('hidden')" class="text-[#6C63FF] hover:underline mt-2 inline-block">Upload your first track</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Albums Grid -->
+                <div id="albums-tab" class="tab-content hidden">
+                    {% if albums %}
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            {% for album in albums %}
+                                {% include 'components/album_card_grid.html' with context %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-16 text-gray-400">
+                            <i class="fas fa-compact-disc text-5xl mb-4 opacity-30"></i>
+                            <p>No albums found</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+            {% endif %}
+            
+        </main>
+        
+        <!-- ========== BOTTOM PLAYER BAR (Always visible) ========== -->
+        <div id="playerBar" class="fixed bottom-0 left-0 right-0 bg-[#0a0a0f]/95 backdrop-blur-xl border-t border-white/5 p-3 z-50 hidden">
+            <div class="max-w-7xl mx-auto flex items-center gap-4">
+                <!-- Cover Art -->
+                <div class="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-white/5">
+                    <img id="playerCover" src="" alt="Cover" class="w-full h-full object-cover">
+                </div>
+                
+                <!-- Track Info -->
+                <div class="flex-1 min-w-0">
+                    <p id="playerTitle" class="text-white text-sm font-medium truncate">Select a track</p>
+                    <p id="playerArtist" class="text-gray-400 text-xs truncate">Artist</p>
+                </div>
+                
+                <!-- Controls -->
+                <div class="flex items-center gap-3">
+                    <button id="prevBtn" class="text-white/50 hover:text-white transition text-lg">
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button id="playBtn" class="w-12 h-12 rounded-full bg-gradient-to-r from-[#6C63FF] to-[#FF6B6B] text-white flex items-center justify-center hover:scale-105 transition">
+                        <i class="fas fa-play text-lg"></i>
+                    </button>
+                    <button id="nextBtn" class="text-white/50 hover:text-white transition text-lg">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                </div>
+                
+                <!-- Progress -->
+                <div class="hidden md:flex items-center gap-3 flex-1 max-w-xs">
+                    <span id="currentTime" class="text-gray-400 text-xs">0:00</span>
+                    <div class="flex-1 h-1 bg-white/10 rounded-full cursor-pointer relative" id="progressContainer">
+                        <div id="progressFill" class="h-full bg-gradient-to-r from-[#6C63FF] to-[#FF6B6B] rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span id="duration" class="text-gray-400 text-xs">0:00</span>
+                </div>
+                
+                <!-- Volume -->
+                <div class="hidden lg:flex items-center gap-2">
+                    <i class="fas fa-volume-up text-gray-400 text-sm"></i>
+                    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8" class="w-20 accent-[#6C63FF]">
+                </div>
+                
+                <!-- Like Button -->
+                <button id="likeBtn" class="text-gray-400 hover:text-[#FF6B6B] transition text-lg hidden">
+                    <i class="far fa-heart"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- ========== UPLOAD MODAL ========== -->
+        {% if current_user %}
+            <div id="uploadModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-[#1a1a2e] rounded-2xl max-w-md w-full p-6 border border-white/10 shadow-2xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-white text-xl font-bold">Upload Track</h2>
+                        <button onclick="document.getElementById('uploadModal').classList.add('hidden')" class="text-gray-400 hover:text-white transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="uploadForm" enctype="multipart/form-data" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Audio File *</label>
+                            <input type="file" name="audio" accept=".mp3,.wav,.ogg" required class="w-full text-white file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-[#6C63FF] file:text-white hover:file:bg-[#5a52e0]">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Cover Art</label>
+                            <input type="file" name="cover" accept=".jpg,.jpeg,.png" class="w-full text-white file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-white/10 file:text-white hover:file:bg-white/20">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Title</label>
+                            <input type="text" name="title" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#6C63FF] transition">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Artist</label>
+                            <input type="text" name="artist" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#6C63FF] transition">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-1">Lyrics (LRC format)</label>
+                            <textarea name="lyrics" rows="4" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#6C63FF] transition font-mono text-sm"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-[#6C63FF] to-[#FF6B6B] text-white font-bold py-3 rounded-full hover:opacity-90 transition">
+                            Upload Track
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- ========== HIDDEN AUDIO ELEMENT ========== -->
+        <audio id="audioPlayer" class="hidden"></audio>
+        
+    </div>
+    
+    <!-- ========== JAVASCRIPT ========== -->
+    <script>
+        // ============================================================
+        // 1. TAB SWITCHING
+        // ============================================================
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'bg-[#6C63FF]/20', 'text-white'));
+                this.classList.add('active', 'bg-[#6C63FF]/20', 'text-white');
+                
+                const tab = this.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(tab + '-tab').classList.remove('hidden');
+            });
+        });
+        // Set initial active tab
+        document.querySelector('.tab-btn.active')?.classList.add('bg-[#6C63FF]/20', 'text-white');
+        
+        // ============================================================
+        // 2. PLAYER LOGIC
+        // ============================================================
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressContainer = document.getElementById('progressContainer');
+        const currentTimeEl = document.getElementById('currentTime');
+        const durationEl = document.getElementById('duration');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const playerBar = document.getElementById('playerBar');
+        const playerTitle = document.getElementById('playerTitle');
+        const playerArtist = document.getElementById('playerArtist');
+        const playerCover = document.getElementById('playerCover');
+        const likeBtn = document.getElementById('likeBtn');
+        
+        let currentTrack = null;
+        let currentTrackId = null;
+        let isPlaying = false;
+        let playlist = [];
+        let currentIndex = 0;
+        
+        // === Play Track ===
+        function playTrack(track, trackId, playlistData) {
+            if (!track) return;
+            
+            currentTrack = track;
+            currentTrackId = trackId;
+            if (playlistData) playlist = playlistData;
+            
+            // Update UI
+            playerTitle.textContent = track.title || 'Untitled';
+            playerArtist.textContent = track.artist || 'Unknown Artist';
+            playerCover.src = track.cover_url || track.cover_filename ? '/uploads/' + track.cover_filename : 'https://picsum.photos/200/200?random=' + trackId;
+            
+            audio.src = '/uploads/' + track.filename;
+            audio.load();
+            audio.play();
+            
+            playerBar.classList.remove('hidden');
+            isPlaying = true;
+            playBtn.innerHTML = '<i class="fas fa-pause text-lg"></i>';
+            
+            // Update like button
+            updateLikeButton(track.is_liked || false);
+            likeBtn.classList.remove('hidden');
+            
+            // Emit to socket if in room
+            if (window.currentRoomId) {
+                socket.emit('sync_playback', {
+                    room_id: window.currentRoomId,
+                    current_time: 0,
+                    is_playing: true
+                });
+            }
+            
+            // Count play
+            fetch('/api/tracks/' + trackId + '/play', { method: 'POST' });
+        }
+        
+        // === Play/Pause Toggle ===
+        function togglePlay() {
+            if (!currentTrack) return;
+            
+            if (audio.paused) {
+                audio.play();
+                isPlaying = true;
+                playBtn.innerHTML = '<i class="fas fa-pause text-lg"></i>';
+            } else {
+                audio.pause();
+                isPlaying = false;
+                playBtn.innerHTML = '<i class="fas fa-play text-lg"></i>';
+            }
+            
+            // Sync with room
+            if (window.currentRoomId) {
+                socket.emit('sync_playback', {
+                    room_id: window.currentRoomId,
+                    current_time: audio.currentTime,
+                    is_playing: !audio.paused
+                });
+            }
+        }
+        
+        // === Like Toggle ===
+        function toggleLike() {
+            if (!currentTrackId) return;
+            
+            fetch('/api/tracks/' + currentTrackId + '/like', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        updateLikeButton(data.liked);
+                    } else if (data.auth_url) {
+                        // Redirect to bot auth
+                        window.open(data.auth_url, '_blank');
+                    }
+                })
+                .catch(e => console.error('Like error:', e));
+        }
+        
+        function updateLikeButton(liked) {
+            if (liked) {
+                likeBtn.innerHTML = '<i class="fas fa-heart text-[#FF6B6B]"></i>';
+                likeBtn.classList.add('text-[#FF6B6B]');
+                likeBtn.classList.remove('text-gray-400');
+            } else {
+                likeBtn.innerHTML = '<i class="far fa-heart"></i>';
+                likeBtn.classList.remove('text-[#FF6B6B]');
+                likeBtn.classList.add('text-gray-400');
+            }
+        }
+        
+        // === Event Listeners ===
+        playBtn.addEventListener('click', togglePlay);
+        
+        audio.addEventListener('timeupdate', function() {
+            if (audio.duration) {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progressFill.style.width = percent + '%';
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+            }
+        });
+        
+        audio.addEventListener('loadedmetadata', function() {
+            durationEl.textContent = formatTime(audio.duration);
+        });
+        
+        audio.addEventListener('ended', function() {
+            playNext();
+        });
+        
+        progressContainer.addEventListener('click', function(e) {
+            if (!audio.duration) return;
+            const rect = this.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = percent * audio.duration;
+        });
+        
+        volumeSlider.addEventListener('input', function() {
+            audio.volume = this.value;
+        });
+        
+        likeBtn.addEventListener('click', toggleLike);
+        
+        // === Next/Prev ===
+        function playNext() {
+            if (playlist.length === 0) return;
+            const nextIndex = (currentIndex + 1) % playlist.length;
+            const track = playlist[nextIndex];
+            if (track) {
+                currentIndex = nextIndex;
+                playTrack(track, track.id, playlist);
+            }
+        }
+        
+        function playPrev() {
+            if (playlist.length === 0) return;
+            const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
+            const track = playlist[prevIndex];
+            if (track) {
+                currentIndex = prevIndex;
+                playTrack(track, track.id, playlist);
+            }
+        }
+        
+        nextBtn.addEventListener('click', playNext);
+        prevBtn.addEventListener('click', playPrev);
+        
+        // === Format Time ===
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        
+        // === Play Track from Card ===
+        function playTrackFromCard(trackId) {
+            fetch('/api/tracks?id=' + trackId)
+                .then(r => r.json())
+                .then(tracks => {
+                    if (tracks.length > 0) {
+                        const track = tracks[0];
+                        // Get all tracks for playlist
+                        fetch('/api/tracks')
+                            .then(r => r.json())
+                            .then(allTracks => {
+                                const idx = allTracks.findIndex(t => t.id === trackId);
+                                if (idx !== -1) {
+                                    currentIndex = idx;
+                                    playTrack(track, trackId, allTracks);
+                                } else {
+                                    playTrack(track, trackId, [track]);
+                                }
+                            });
+                    }
+                })
+                .catch(e => console.error('Play error:', e));
+        }
+        
+        // Make playTrackFromCard globally accessible
+        window.playTrackFromCard = playTrackFromCard;
+        
+        // === Upload Form ===
+        document.getElementById('uploadForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/api/tracks', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Track uploaded successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(e => alert('Upload failed: ' + e.message));
+        });
+        
+        // === Logout ===
+        function logout() {
+            fetch('/api/auth/logout', { method: 'POST' })
+                .then(() => location.reload())
+                .catch(() => location.reload());
+        }
+        
+        // ============================================================
+        // 3. SOCKET.IO - ROOM SYNC
+        // ============================================================
+        {% if room_id %}
+            window.currentRoomId = '{{ room_id }}';
+        {% endif %}
+        
+        const socket = io();
+        
+        socket.on('connect', function() {
+            console.log('Socket connected');
+            {% if room_id and is_member %}
+                socket.emit('join_room', { room_id: '{{ room_id }}' });
+            {% endif %}
+        });
+        
+        socket.on('room_state', function(data) {
+            console.log('Room state:', data);
+            if (data.current_track) {
+                // Update player with room state
+                const track = data.current_track;
+                playerTitle.textContent = track.title;
+                playerArtist.textContent = track.artist;
+                playerCover.src = track.cover_filename ? '/uploads/' + track.cover_filename : 'https://picsum.photos/200/200';
+                audio.src = '/uploads/' + track.filename;
+                audio.currentTime = data.current_time || 0;
+                if (data.is_playing) {
+                    audio.play();
+                    playBtn.innerHTML = '<i class="fas fa-pause text-lg"></i>';
+                }
+                playerBar.classList.remove('hidden');
+            }
+        });
+        
+        socket.on('queue_updated', function(queue) {
+            console.log('Queue updated:', queue);
+            // Update UI queue if on room page
+            const queueContainer = document.getElementById('queueList');
+            if (queueContainer) {
+                queueContainer.innerHTML = queue.map((item, idx) => 
+                    `<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition">
+                        <span class="text-gray-400 text-sm">${idx + 1}</span>
+                        <span class="text-white text-sm truncate flex-1">${item.title}</span>
+                        <span class="text-gray-400 text-xs">${item.artist}</span>
+                    </div>`
+                ).join('');
+            }
+        });
+        
+        socket.on('track_changed', function(data) {
+            console.log('Track changed:', data);
+            if (data.track) {
+                playTrack(data.track, data.track.id, []);
+                if (data.current_time) audio.currentTime = data.current_time;
+                if (data.is_playing) {
+                    audio.play();
+                    playBtn.innerHTML = '<i class="fas fa-pause text-lg"></i>';
+                }
+            }
+        });
+        
+        socket.on('playback_sync', function(data) {
+            console.log('Playback sync:', data);
+            audio.currentTime = data.current_time;
+            if (data.is_playing && audio.paused) {
+                audio.play();
+                playBtn.innerHTML = '<i class="fas fa-pause text-lg"></i>';
+            } else if (!data.is_playing && !audio.paused) {
+                audio.pause();
+                playBtn.innerHTML = '<i class="fas fa-play text-lg"></i>';
+            }
+        });
+        
+        // ============================================================
+        // 4. KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            // Spacebar to toggle play
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            }
+            if (e.code === 'ArrowRight') {
+                audio.currentTime = Math.min(audio.currentTime + 5, audio.duration || 0);
+            }
+            if (e.code === 'ArrowLeft') {
+                audio.currentTime = Math.max(audio.currentTime - 5, 0);
+            }
+        });
+        
+        console.log('🎵 swagPlayer loaded successfully!');
+    </script>
+</body>
+</html>
