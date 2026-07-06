@@ -1,1 +1,113 @@
-/* Placeholder for templates/library.html */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.display_name }}'s Library • swagPlayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gradient-to-b from-[#0a0a0f] to-[#1a1a2e] text-white">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <a href="/" class="text-gray-400 hover:text-white transition text-sm"><i class="fas fa-arrow-left mr-2"></i> Back</a>
+        
+        <!-- User Profile -->
+        <div class="flex items-center gap-6 mt-4 mb-8">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#FF6B6B] overflow-hidden">
+                {% if user.avatar_url %}
+                    <img src="{{ user.avatar_url }}" class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-3xl font-bold">
+                        {{ (user.display_name or 'U')[0] }}
+                    </div>
+                {% endif %}
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold">{{ user.display_name or user.first_name }}</h1>
+                <p class="text-gray-400">@{{ user.nickname or 'user' }}</p>
+                <p class="text-gray-500 text-sm mt-1">Joined {{ user.created_at[:10] if user.created_at else 'recently' }}</p>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-6 bg-white/5 rounded-full p-1 max-w-xs">
+            <button class="lib-tab active flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="tracks">Tracks</button>
+            <button class="lib-tab flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="albums">Albums</button>
+        </div>
+        
+        <!-- Tracks -->
+        <div id="tracks-tab" class="lib-content">
+            {% if tracks %}
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {% for track in tracks %}
+                        <div class="bg-white/5 hover:bg-white/10 rounded-xl p-3 transition cursor-pointer group" onclick="window.location.href='/track/{{ track.slug or track.id }}'">
+                            <div class="aspect-square rounded-lg overflow-hidden bg-white/5">
+                                {% if track.cover_filename %}
+                                    <img src="/uploads/{{ track.cover_filename }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full bg-gradient-to-br from-[#6C63FF]/30 to-[#FF6B6B]/30 flex items-center justify-center">
+                                        <i class="fas fa-music text-3xl text-white/30"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2">
+                                <p class="text-white text-sm font-medium truncate">{{ track.title }}</p>
+                                <p class="text-gray-400 text-xs truncate">{{ track.artist }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-16 text-gray-400">
+                    <i class="fas fa-music text-5xl mb-4 opacity-30"></i>
+                    <p>No tracks in library</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Albums -->
+        <div id="albums-tab" class="lib-content hidden">
+            {% if albums %}
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {% for album in albums %}
+                        <a href="/album/{{ album.slug or album.id }}" class="bg-white/5 hover:bg-white/10 rounded-xl p-3 transition block">
+                            <div class="aspect-square rounded-lg overflow-hidden bg-white/5">
+                                {% if album.cover_filename %}
+                                    <img src="/uploads/{{ album.cover_filename }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full bg-gradient-to-br from-[#6C63FF]/30 to-[#FF6B6B]/30 flex items-center justify-center">
+                                        <i class="fas fa-compact-disc text-3xl text-white/30"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2">
+                                <p class="text-white text-sm font-medium truncate">{{ album.title }}</p>
+                                <p class="text-gray-400 text-xs truncate">{{ album.tracks_count or 0 }} tracks</p>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-16 text-gray-400">
+                    <i class="fas fa-compact-disc text-5xl mb-4 opacity-30"></i>
+                    <p>No albums in library</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        document.querySelectorAll('.lib-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.lib-tab').forEach(b => b.classList.remove('bg-[#6C63FF]/20', 'text-white'));
+                this.classList.add('bg-[#6C63FF]/20', 'text-white');
+                
+                document.querySelectorAll('.lib-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
+            });
+        });
+        document.querySelector('.lib-tab.active')?.classList.add('bg-[#6C63FF]/20', 'text-white');
+    </script>
+</body>
+</html>
