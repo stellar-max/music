@@ -1,0 +1,32 @@
+<!-- Track Card Component -->
+<div class="track-card bg-white/5 hover:bg-white/10 rounded-xl p-3 transition cursor-pointer group" 
+     onclick="playTrackFromCard({{ track.id }})">
+    <div class="relative aspect-square rounded-lg overflow-hidden bg-white/5">
+        {% if track.cover_filename %}
+            <img src="/uploads/{{ track.cover_filename }}" alt="{{ track.title }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+        {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-[#6C63FF]/30 to-[#FF6B6B]/30 flex items-center justify-center">
+                <i class="fas fa-music text-4xl text-white/30"></i>
+            </div>
+        {% endif %}
+        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+            <div class="w-14 h-14 rounded-full bg-[#6C63FF] flex items-center justify-center text-white text-xl shadow-2xl transform scale-90 group-hover:scale-100 transition">
+                <i class="fas fa-play"></i>
+            </div>
+        </div>
+        {% if track.is_pinned %}
+            <div class="absolute top-2 right-2 bg-[#6C63FF] text-white text-xs px-2 py-0.5 rounded-full">Pinned</div>
+        {% endif %}
+    </div>
+    <div class="mt-2">
+        <p class="text-white text-sm font-medium truncate">{{ track.title }}</p>
+        <p class="text-gray-400 text-xs truncate">{{ track.artist }}</p>
+        <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+            <span><i class="far fa-heart mr-0.5"></i> {{ track.likes_count or 0 }}</span>
+            <span><i class="far fa-play-circle mr-0.5"></i> {{ track.plays_count or 0 }}</span>
+            {% if track.is_liked %}
+                <span class="text-[#FF6B6B]"><i class="fas fa-heart"></i></span>
+            {% endif %}
+        </div>
+    </div>
+</div>
