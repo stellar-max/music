@@ -2,40 +2,39 @@
   "name": "simplexweb",
   "description": "SimpleWebPlayer - Modern music player with collaborative rooms and Telegram bot",
   "repository": "https://github.com/superboygisan/simple_webm",
-  "keywords": ["music", "player", "telegram", "flask", "socketio"],
+  "keywords": [
+    "music",
+    "player",
+    "telegram",
+    "flask",
+    "socketio"
+  ],
   "env": {
     "BOT_TOKEN": {
-      "description": "Telegram Bot Token from @BotFather",
+      "description": "Telegram Bot Token",
       "required": true
     },
     "SECRET_KEY": {
-      "description": "Secret key for Flask sessions",
+      "description": "Secret key",
       "generator": "secret"
     },
     "WEBAPP_URL": {
-      "description": "Your Heroku app URL",
-      "value": "https://simplexweb.herokuapp.com",
+      "description": "Your Heroku App URL",
       "required": true
     },
     "OWNER_ID": {
-      "description": "Your Telegram User ID",
+      "description": "Telegram User ID",
       "required": true
     },
     "OWNER_USERNAME": {
-      "description": "Your Telegram Username",
-      "value": "@II_SB_SIMPLE_II",
+      "description": "Telegram Username",
       "required": true
     },
     "FLASK_DEBUG": {
-      "description": "Enable debug mode",
+      "description": "Enable Debug",
       "value": "false"
     }
   },
-  "addons": [
-    {
-      "plan": "heroku-postgresql:hobby-dev"
-    }
-  ],
   "buildpacks": [
     {
       "url": "heroku/python"
