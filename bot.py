@@ -31,6 +31,28 @@ DB_FILE = 'music.db'
 socketio = None
 
 # ============================================================================
+# TELEGRAM BOT (run in background)
+# ============================================================================
+
+def start_bot():
+    """Start the Telegram bot in a background thread"""
+    import threading
+    from bot import run_bot
+    
+    def bot_thread():
+        try:
+            run_bot(socketio)
+        except Exception as e:
+            print(f"Bot error: {e}")
+    
+    thread = threading.Thread(target=bot_thread, daemon=True)
+    thread.start()
+    print("🤖 Telegram bot thread started")
+
+# Uncomment this line to start the bot automatically
+# start_bot()
+
+# ============================================================================
 # DATABASE HELPERS
 # ============================================================================
 
