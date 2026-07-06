@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session, current_app
 from werkzeug.utils import secure_filename
-from app import login_required, get_current_user, allowed_file, DB_FILE, MUTAGEN_AVAILABLE
+from common import login_required, get_current_user, allowed_file, DB_FILE, MUTAGEN_AVAILABLE
 
 tracks_bp = Blueprint('tracks', __name__)
 
