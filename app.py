@@ -1,16 +1,68 @@
 # app.py - Main Application Entry Point
 # Clean, modular, with Socket.IO support and auto-healing database
 
+# app.py - Main Application Entry Point
+
 import os
 import sqlite3
 from datetime import datetime
-from functools import wraps
-
 from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# Import everything from common
+from common import (
+    DB_FILE, UPLOAD_FOLDER, ALLOWED_EXTENSIONS, MUTAGEN_AVAILABLE,
+    get_current_user, verify_telegram_webapp_data, allowed_file,
+    login_required, admin_required
+)
+
+# Initialize Flask app
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['DB_FILE'] = DB_FILE
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
+# ============================================================================
+# DATABASE INITIALIZATION (unchanged)
+# ============================================================================
+
+def ensure_valid_db():
+    # ... (same as before) ...
+
+def init_db():
+    # ... (same as before) ...
+
+init_db()
+
+# ============================================================================
+# ROUTES (keep all your routes exactly as they are)
+# ============================================================================
+
+# ... your existing routes (@app.route) ...
+
+# ============================================================================
+# REGISTER BLUEPRINTS (unchanged)
+# ============================================================================
+
+from routes.auth import auth_bp
+from routes.tracks import tracks_bp
+from routes.albums import albums_bp
+from routes.admin import admin_bp
+from routes.rooms import rooms_bp
+
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+app.register_blueprint(tracks_bp, url_prefix='/api/tracks')
+app.register_blueprint(albums_bp, url_prefix='/api/albums')
+app.register_blueprint(admin_bp, url_prefix='/admin/api')
+app.register_blueprint(rooms_bp, url_prefix='/api/rooms')
+
+# ... rest (socketio events, if __name__ == '__main__') ...
 # Import shared utilities from common.py to avoid circular imports
 from common import DB_FILE, get_current_user, verify_telegram_webapp_data
 
