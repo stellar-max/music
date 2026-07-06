@@ -1,0 +1,45 @@
+# render.yaml - Auto-detected by Render
+
+services:
+  - type: web
+    name: swagplayer
+    runtime: python
+    repo: https://github.com/superboygisan/swagPlayer
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 app:app
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+        description: "Telegram Bot Token from @BotFather"
+      - key: SECRET_KEY
+        generateValue: true
+        description: "Secret key for sessions"
+      - key: WEBAPP_URL
+        value: https://swagplayer.onrender.com
+        description: "Your app URL"
+      - key: FLASK_DEBUG
+        value: false
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: swagplayer-db
+          property: connectionString
+    healthCheckPath: /health
+    autoDeploy: true
+    domains:
+      - swagplayer.onrender.com
+
+  - type: redis
+    name: swagplayer-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+
+  - type: postgresql
+    name: swagplayer-db
+    plan: free
+    database: swagplayer
+    user: swaguser
