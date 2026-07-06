@@ -1,7 +1,7 @@
 {
-  "name": "swagPlayer",
-  "description": "Modern music player with collaborative rooms and Telegram bot",
-  "repository": "https://github.com/superboygisan/swagPlayer",
+  "name": "simplexweb",
+  "description": "SimpleWebPlayer - Modern music player with collaborative rooms and Telegram bot",
+  "repository": "https://github.com/superboygisan/simple_webm",
   "keywords": ["music", "player", "telegram", "flask", "socketio"],
   "env": {
     "BOT_TOKEN": {
@@ -13,7 +13,17 @@
       "generator": "secret"
     },
     "WEBAPP_URL": {
-      "description": "Your application URL",
+      "description": "Your Heroku app URL",
+      "value": "https://simplexweb.herokuapp.com",
+      "required": true
+    },
+    "OWNER_ID": {
+      "description": "Your Telegram User ID",
+      "required": true
+    },
+    "OWNER_USERNAME": {
+      "description": "Your Telegram Username",
+      "value": "@II_SB_SIMPLE_II",
       "required": true
     },
     "FLASK_DEBUG": {
@@ -24,9 +34,6 @@
   "addons": [
     {
       "plan": "heroku-postgresql:hobby-dev"
-    },
-    {
-      "plan": "heroku-redis:hobby-dev"
     }
   ],
   "buildpacks": [
