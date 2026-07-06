@@ -1,1 +1,281 @@
-/* Placeholder for templates/admin_new.html */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel • swagPlayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="min-h-screen bg-[#0a0a0f] text-white">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold">⚙️ Admin Panel</h1>
+                <p class="text-gray-400 text-sm">Manage tracks, albums, and users</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-400">Welcome, {{ session.admin_username }}</span>
+                <button onclick="logout()" class="px-4 py-2 bg-red-500/20 text-red-400 rounded-full text-sm hover:bg-red-500/30 transition">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                </button>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="statsContainer">
+            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                <p class="text-gray-400 text-sm">Tracks</p>
+                <p class="text-2xl font-bold" id="statsTracks">-</p>
+            </div>
+            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                <p class="text-gray-400 text-sm">Albums</p>
+                <p class="text-2xl font-bold" id="statsAlbums">-</p>
+            </div>
+            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                <p class="text-gray-400 text-sm">Users</p>
+                <p class="text-2xl font-bold" id="statsUsers">-</p>
+            </div>
+            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                <p class="text-gray-400 text-sm">Rooms</p>
+                <p class="text-2xl font-bold" id="statsRooms">-</p>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex gap-1 mb-4 bg-white/5 rounded-full p-1 max-w-md">
+            <button class="admin-tab active flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="tracks">Tracks</button>
+            <button class="admin-tab flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="albums">Albums</button>
+            <button class="admin-tab flex-1 py-2 px-4 rounded-full text-sm font-medium transition" data-tab="users">Users</button>
+        </div>
+        
+        <!-- Tracks Tab -->
+        <div id="tracks-tab" class="admin-content">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-gray-400 border-b border-white/5">
+                        <tr>
+                            <th class="text-left py-3 px-3">#</th>
+                            <th class="text-left py-3 px-3">Title</th>
+                            <th class="text-left py-3 px-3">Artist</th>
+                            <th class="text-left py-3 px-3">User</th>
+                            <th class="text-left py-3 px-3">Plays</th>
+                            <th class="text-left py-3 px-3">Likes</th>
+                            <th class="text-left py-3 px-3">Status</th>
+                            <th class="text-left py-3 px-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracksTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Albums Tab -->
+        <div id="albums-tab" class="admin-content hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-gray-400 border-b border-white/5">
+                        <tr>
+                            <th class="text-left py-3 px-3">#</th>
+                            <th class="text-left py-3 px-3">Title</th>
+                            <th class="text-left py-3 px-3">User</th>
+                            <th class="text-left py-3 px-3">Tracks</th>
+                            <th class="text-left py-3 px-3">Likes</th>
+                            <th class="text-left py-3 px-3">Status</th>
+                            <th class="text-left py-3 px-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="albumsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="users-tab" class="admin-content hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-gray-400 border-b border-white/5">
+                        <tr>
+                            <th class="text-left py-3 px-3">ID</th>
+                            <th class="text-left py-3 px-3">Name</th>
+                            <th class="text-left py-3 px-3">Username</th>
+                            <th class="text-left py-3 px-3">Telegram ID</th>
+                            <th class="text-left py-3 px-3">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching
+        document.querySelectorAll('.admin-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('bg-[#6C63FF]/20', 'text-white'));
+                this.classList.add('bg-[#6C63FF]/20', 'text-white');
+                
+                document.querySelectorAll('.admin-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(this.dataset.tab + '-tab').classList.remove('hidden');
+            });
+        });
+        document.querySelector('.admin-tab.active')?.classList.add('bg-[#6C63FF]/20', 'text-white');
+        
+        // Load data
+        function loadStats() {
+            Promise.all([
+                fetch('/admin/api/tracks').then(r => r.json()),
+                fetch('/admin/api/albums').then(r => r.json()),
+                fetch('/admin/api/users').then(r => r.json()),
+                fetch('/api/rooms').then(r => r.json())
+            ]).then(([tracks, albums, users, rooms]) => {
+                document.getElementById('statsTracks').textContent = tracks.length || 0;
+                document.getElementById('statsAlbums').textContent = albums.length || 0;
+                document.getElementById('statsUsers').textContent = users.length || 0;
+                document.getElementById('statsRooms').textContent = rooms.length || 0;
+            });
+        }
+        
+        function loadTracks() {
+            fetch('/admin/api/tracks')
+                .then(r => r.json())
+                .then(tracks => {
+                    document.getElementById('tracksTableBody').innerHTML = tracks.map((t, i) => `
+                        <tr class="border-b border-white/5 hover:bg-white/5">
+                            <td class="py-2 px-3 text-gray-500">${i+1}</td>
+                            <td class="py-2 px-3">${t.title || 'Untitled'}</td>
+                            <td class="py-2 px-3">${t.artist || 'Unknown'}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${t.display_name || t.nickname}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${t.plays_count || 0}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${t.likes_count || 0}</td>
+                            <td class="py-2 px-3">
+                                <span class="px-2 py-1 rounded-full text-xs ${t.hidden ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">
+                                    ${t.hidden ? 'Hidden' : 'Public'}
+                                </span>
+                            </td>
+                            <td class="py-2 px-3">
+                                <button onclick="toggleTrackVisibility(${t.id}, ${t.hidden ? 0 : 1})" class="text-xs px-2 py-1 rounded ${t.hidden ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'} hover:opacity-70 transition">
+                                    ${t.hidden ? 'Show' : 'Hide'}
+                                </button>
+                                <button onclick="pinTrack(${t.id}, ${t.is_pinned ? 0 : 1})" class="text-xs px-2 py-1 rounded ${t.is_pinned ? 'bg-[#6C63FF]/20 text-[#6C63FF]' : 'bg-white/10 text-gray-400'} hover:opacity-70 transition ml-1">
+                                    ${t.is_pinned ? 'Unpin' : 'Pin'}
+                                </button>
+                                <button onclick="deleteTrack(${t.id})" class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition ml-1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                });
+        }
+        
+        function loadAlbums() {
+            fetch('/admin/api/albums')
+                .then(r => r.json())
+                .then(albums => {
+                    document.getElementById('albumsTableBody').innerHTML = albums.map((a, i) => `
+                        <tr class="border-b border-white/5 hover:bg-white/5">
+                            <td class="py-2 px-3 text-gray-500">${i+1}</td>
+                            <td class="py-2 px-3">${a.title}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${a.display_name || a.nickname}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">-</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${a.likes_count || 0}</td>
+                            <td class="py-2 px-3">
+                                <span class="px-2 py-1 rounded-full text-xs ${a.hidden ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">
+                                    ${a.hidden ? 'Hidden' : 'Public'}
+                                </span>
+                            </td>
+                            <td class="py-2 px-3">
+                                <button onclick="toggleAlbumVisibility(${a.id}, ${a.hidden ? 0 : 1})" class="text-xs px-2 py-1 rounded ${a.hidden ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'} hover:opacity-70 transition">
+                                    ${a.hidden ? 'Show' : 'Hide'}
+                                </button>
+                                <button onclick="pinAlbum(${a.id}, ${a.is_pinned ? 0 : 1})" class="text-xs px-2 py-1 rounded ${a.is_pinned ? 'bg-[#6C63FF]/20 text-[#6C63FF]' : 'bg-white/10 text-gray-400'} hover:opacity-70 transition ml-1">
+                                    ${a.is_pinned ? 'Unpin' : 'Pin'}
+                                </button>
+                                <button onclick="deleteAlbum(${a.id})" class="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition ml-1">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                });
+        }
+        
+        function loadUsers() {
+            fetch('/admin/api/users')
+                .then(r => r.json())
+                .then(users => {
+                    document.getElementById('usersTableBody').innerHTML = users.map(u => `
+                        <tr class="border-b border-white/5 hover:bg-white/5">
+                            <td class="py-2 px-3 text-gray-500">${u.id}</td>
+                            <td class="py-2 px-3">${u.display_name || u.first_name || 'User'}</td>
+                            <td class="py-2 px-3 text-gray-400">@${u.nickname || u.username || 'unknown'}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${u.telegram_id || '-'}</td>
+                            <td class="py-2 px-3 text-gray-400 text-sm">${u.created_at ? u.created_at.slice(0,10) : '-'}</td>
+                        </tr>
+                    `).join('');
+                });
+        }
+        
+        // Admin actions
+        function toggleTrackVisibility(id, hidden) {
+            fetch('/admin/api/tracks/' + id + '/toggle-visibility', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hidden: hidden })
+            }).then(() => loadTracks());
+        }
+        
+        function pinTrack(id, is_pinned) {
+            fetch('/admin/api/tracks/' + id + '/pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_pinned: is_pinned })
+            }).then(() => loadTracks());
+        }
+        
+        function deleteTrack(id) {
+            if (confirm('Delete this track?')) {
+                fetch('/admin/api/tracks/' + id, { method: 'DELETE' })
+                    .then(() => { loadTracks(); loadStats(); });
+            }
+        }
+        
+        function toggleAlbumVisibility(id, hidden) {
+            fetch('/admin/api/albums/' + id + '/toggle-visibility', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hidden: hidden })
+            }).then(() => loadAlbums());
+        }
+        
+        function pinAlbum(id, is_pinned) {
+            fetch('/admin/api/albums/' + id + '/pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_pinned: is_pinned })
+            }).then(() => loadAlbums());
+        }
+        
+        function deleteAlbum(id) {
+            if (confirm('Delete this album?')) {
+                fetch('/admin/api/albums/' + id, { method: 'DELETE' })
+                    .then(() => { loadAlbums(); loadStats(); });
+            }
+        }
+        
+        function logout() {
+            fetch('/admin/api/logout', { method: 'POST' })
+                .then(() => window.location.href = '/admin/login');
+        }
+        
+        // Initial load
+        loadStats();
+        loadTracks();
+        loadAlbums();
+        loadUsers();
+    </script>
+</body>
+</html>
