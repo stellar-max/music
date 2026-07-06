@@ -1,1 +1,310 @@
-/* Placeholder for static/css/style.css */
+/* ============================================================
+   swagPlayer - Premium UI Styles
+   Inspired by WebMusicPlayer
+   ============================================================ */
+
+/* ----- RESET & BASE ----- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0a0f;
+    color: #ffffff;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----- SCROLLBAR ----- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(108, 99, 255, 0.4);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(108, 99, 255, 0.6);
+}
+
+/* ----- BUTTONS ----- */
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* ----- TABS ----- */
+.tab-btn,
+.admin-tab,
+.lib-tab {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover,
+.admin-tab:hover,
+.lib-tab:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.tab-btn.active,
+.admin-tab.active,
+.lib-tab.active {
+    background: rgba(108, 99, 255, 0.2);
+    color: #ffffff;
+}
+
+/* ----- TRACK CARDS ----- */
+.track-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.track-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ----- PLAYER BAR ----- */
+#playerBar {
+    box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.8);
+}
+
+/* ----- PROGRESS BAR ----- */
+#progressContainer {
+    position: relative;
+}
+
+#progressFill {
+    position: relative;
+    transition: width 0.1s linear;
+}
+
+#progressFill::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: #6C63FF;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.5);
+}
+
+#progressContainer:hover #progressFill::after {
+    opacity: 1;
+}
+
+/* ----- VOLUME SLIDER ----- */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.1);
+    height: 4px;
+    border-radius: 2px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6C63FF;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6C63FF;
+    cursor: pointer;
+    border: none;
+}
+
+/* ----- MODAL ----- */
+#uploadModal,
+#createModal {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ----- GLASS EFFECT ----- */
+.glass {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ----- COVER ART ANIMATION ----- */
+.cover-art-rotate {
+    animation: slowSpin 20s linear infinite;
+}
+
+@keyframes slowSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ----- TEXT UTILITIES ----- */
+.text-gradient {
+    background: linear-gradient(135deg, #6C63FF, #FF6B6B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ----- RESPONSIVE ----- */
+@media (max-width: 640px) {
+    .track-card {
+        padding: 8px;
+    }
+    #playerBar {
+        padding: 8px 12px;
+    }
+    #playerBar .w-14 {
+        width: 44px;
+        height: 44px;
+    }
+    #playerBar .w-12 {
+        width: 44px;
+        height: 44px;
+    }
+    #playerBar .w-12 i {
+        font-size: 16px !important;
+    }
+}
+
+/* ----- LOADING SHIMMER ----- */
+.shimmer {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.03) 0%, 
+        rgba(255, 255, 255, 0.08) 50%, 
+        rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* ----- ROOM LIVE INDICATOR ----- */
+#liveIndicator {
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ----- ADMIN TABLES ----- */
+.admin-content table {
+    border-collapse: collapse;
+}
+
+.admin-content th {
+    font-weight: 500;
+    letter-spacing: 0.03em;
+}
+
+.admin-content td {
+    vertical-align: middle;
+}
+
+/* ----- FILE INPUTS ----- */
+input[type="file"] {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+input[type="file"]::file-selector-button {
+    background: rgba(108, 99, 255, 0.2);
+    color: #6C63FF;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 12px;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: rgba(108, 99, 255, 0.3);
+}
+
+/* ----- TOAST NOTIFICATION (optional) ----- */
+.toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(12px);
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 14px;
+    z-index: 1000;
+    animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
