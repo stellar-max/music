@@ -6,7 +6,7 @@ import sqlite3
 import uuid
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session, current_app
-from app import login_required, get_current_user, allowed_file, DB_FILE
+from common import login_required, get_current_user, allowed_file, DB_FILE
 
 albums_bp = Blueprint('albums', __name__)
 
