@@ -8,6 +8,18 @@ import uuid
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+import sys
+import threading
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
+from bot_config import BOT_TOKEN, WEBAPP_URL, DB_FILE, logger, socketio
+from bot_handlers import (
+    start_command,
+    login_command,
+    play_command,
+    room_command,
+    help_command,
+    button_callback
+)
 
 # Configure logging
 logging.basicConfig(
@@ -376,6 +388,69 @@ def run_bot(socketio_instance=None):
         app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 # ============================================================================
+
+# bot.py - Complete Telegram Bot with Modular Structure
+# No updates needed - just copy and paste
+
+# ============================================================================
+# BOT INITIALIZATION
+# ============================================================================
+
+def init_bot(socketio_instance=None):
+    """Initialize the bot with Socket.IO instance"""
+    global socketio
+    socketio = socketio_instance
+    
+    if not BOT_TOKEN:
+        logger.error("❌ BOT_TOKEN not set! Bot will not start.")
+        return None
+    
+    # Create application
+    application = Application.builder().token(BOT_TOKEN).build()
+    
+    # Add command handlers
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("login", login_command))
+    application.add_handler(CommandHandler("play", play_command))
+    application.add_handler(CommandHandler("room", room_command))
+    application.add_handler(CommandHandler("help", help_command))
+    
+    # Add callback handler for buttons
+    application.add_handler(CallbackQueryHandler(button_callback))
+    
+    # Import and init Socket.IO for play command
+    from bot_handlers.play import init_socketio
+    init_socketio(socketio)
+    
+    logger.info("🤖 Telegram bot initialized successfully!")
+    return application
+
+def run_bot(socketio_instance=None):
+    """Run the bot"""
+    app = init_bot(socketio_instance)
+    if app:
+        logger.info("🚀 Starting Telegram bot...")
+        app.run_polling(allowed_updates=["message", "callback_query"])
+
+def start_bot_background(socketio_instance=None):
+    """Start the Telegram bot in a background thread"""
+    def bot_thread():
+        try:
+            run_bot(socketio_instance)
+        except Exception as e:
+            logger.error(f"❌ Bot error: {e}")
+    
+    thread = threading.Thread(target=bot_thread, daemon=True)
+    thread.start()
+    logger.info("🤖 Telegram bot thread started in background")
+    return thread
+
+# ============================================================================
+# MAIN
+# ============================================================================
+
+if __name__ == '__main__':
+    run_bot()
 # MAIN
 # ============================================================================
 
