@@ -5,7 +5,7 @@ import os
 import sqlite3
 from flask import Blueprint, request, jsonify, session, render_template, redirect, current_app
 from werkzeug.security import check_password_hash
-from app import admin_required, login_required, DB_FILE
+from common import admin_required, login_required, DB_FILE
 
 admin_bp = Blueprint('admin', __name__)
 
