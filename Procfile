@@ -1,6 +1,6 @@
 # Procfile - Auto-detected by Heroku
-web: gunicorn --worker-class eventlet -w 1 app:app
-
+# Procfile - No extension
+web: python app.py
 # For background processes (optional)
 worker: python bot.py
 
