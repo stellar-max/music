@@ -5,7 +5,7 @@ import sqlite3
 import json
 from flask import Blueprint, request, jsonify, session, redirect, render_template
 from functools import wraps
-from app import get_current_user, verify_telegram_webapp_data, DB_FILE
+from common import get_current_user, verify_telegram_webapp_data, DB_FILE
 
 auth_bp = Blueprint('auth', __name__)
 
