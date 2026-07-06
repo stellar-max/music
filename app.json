@@ -1,0 +1,37 @@
+{
+  "name": "swagPlayer",
+  "description": "Modern music player with collaborative rooms and Telegram bot",
+  "repository": "https://github.com/superboygisan/swagPlayer",
+  "keywords": ["music", "player", "telegram", "flask", "socketio"],
+  "env": {
+    "BOT_TOKEN": {
+      "description": "Telegram Bot Token from @BotFather",
+      "required": true
+    },
+    "SECRET_KEY": {
+      "description": "Secret key for Flask sessions",
+      "generator": "secret"
+    },
+    "WEBAPP_URL": {
+      "description": "Your application URL",
+      "required": true
+    },
+    "FLASK_DEBUG": {
+      "description": "Enable debug mode",
+      "value": "false"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:hobby-dev"
+    },
+    {
+      "plan": "heroku-redis:hobby-dev"
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
