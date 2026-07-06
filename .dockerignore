@@ -1,0 +1,64 @@
+# .dockerignore - Excludes files from Docker build
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (keep empty)
+uploads/*
+!uploads/.gitkeep
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+temp_*
+*.tmp
+*.pid
+
+# Deployment files
+Dockerfile
+docker-compose.yml
+.dockerignore
+README.md
+render.yaml
+Procfile
+runtime.txt
+vercel.json
+app.json
+
+# Node modules (if any)
+node_modules/
