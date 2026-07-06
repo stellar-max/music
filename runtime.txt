@@ -1,0 +1,2 @@
+# runtime.txt - Auto-detected by Heroku
+python-3.11.0
