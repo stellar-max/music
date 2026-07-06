@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "env": {
+    "BOT_TOKEN": "your_telegram_bot_token",
+    "SECRET_KEY": "your_secret_key",
+    "WEBAPP_URL": "https://swagplayer.vercel.app",
+    "FLASK_DEBUG": "false"
+  }
+}
