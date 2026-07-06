@@ -1,1 +1,360 @@
-/* Placeholder for templates/room_detail.html */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room.name }} • swagPlayer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="min-h-screen bg-gradient-to-b from-[#0a0a0f] to-[#1a1a2e] text-white">
+    
+    <div class="max-w-6xl mx-auto px-4 py-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <a href="/rooms" class="text-gray-400 hover:text-white transition text-sm"><i class="fas fa-arrow-left mr-2"></i> Rooms</a>
+                <h1 class="text-2xl font-bold mt-1">{{ room.name }}</h1>
+                <p class="text-gray-400 text-sm">Host: {{ room.host_name }} • <span id="memberCount">{{ members|length }}</span> members</p>
+            </div>
+            <div>
+                <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                    <span id="liveIndicator">●</span> Live
+                </span>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Player Area (2/3 width) -->
+            <div class="lg:col-span-2">
+                <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
+                    <!-- Cover -->
+                    <div class="aspect-square max-w-xs mx-auto rounded-xl overflow-hidden bg-white/5" id="roomCover">
+                        <img id="roomCoverImg" src="" alt="Cover" class="w-full h-full object-cover hidden">
+                        <div class="w-full h-full flex items-center justify-center text-gray-500" id="roomCoverPlaceholder">
+                            <i class="fas fa-music text-6xl opacity-30"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Track Info -->
+                    <div class="text-center mt-4">
+                        <h2 id="roomTrackTitle" class="text-xl font-semibold text-gray-400">Waiting for track...</h2>
+                        <p id="roomTrackArtist" class="text-gray-500 text-sm">-</p>
+                    </div>
+                    
+                    <!-- Player Controls -->
+                    <div class="flex items-center justify-center gap-4 mt-4">
+                        <button onclick="roomPrev()" class="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 transition text-white">
+                            <i class="fas fa-step-backward"></i>
+                        </button>
+                        <button id="roomPlayBtn" onclick="roomTogglePlay()" class="w-16 h-16 rounded-full bg-gradient-to-r from-[#6C63FF] to-[#FF6B6B] text-white flex items-center justify-center hover:scale-105 transition">
+                            <i class="fas fa-play text-xl"></i>
+                        </button>
+                        <button onclick="roomNext()" class="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 transition text-white">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Progress -->
+                    <div class="flex items-center gap-3 mt-4">
+                        <span id="roomCurrentTime" class="text-gray-400 text-xs">0:00</span>
+                        <div class="flex-1 h-1.5 bg-white/10 rounded-full cursor-pointer" id="roomProgressContainer">
+                            <div id="roomProgressFill" class="h-full bg-gradient-to-r from-[#6C63FF] to-[#FF6B6B] rounded-full" style="width: 0%"></div>
+                        </div>
+                        <span id="roomDuration" class="text-gray-400 text-xs">0:00</span>
+                    </div>
+                </div>
+                
+                <!-- Queue -->
+                <div class="bg-white/5 rounded-2xl p-4 border border-white/10 mt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold"><i class="fas fa-list mr-2 text-[#6C63FF]"></i> Queue</h3>
+                        <span class="text-gray-400 text-xs" id="queueCount">0 tracks</span>
+                    </div>
+                    <div id="queueList" class="space-y-1 max-h-48 overflow-y-auto">
+                        <div class="text-center text-gray-500 text-sm py-4">Queue is empty</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Members Sidebar (1/3 width) -->
+            <div class="lg:col-span-1">
+                <div class="bg-white/5 rounded-2xl p-4 border border-white/10">
+                    <h3 class="font-semibold mb-3"><i class="fas fa-users mr-2 text-[#6C63FF]"></i> Members</h3>
+                    <div id="membersList" class="space-y-2">
+                        {% for member in members %}
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#FF6B6B] flex items-center justify-center text-xs font-bold">
+                                    {{ member.display_name[0] if member.display_name else '?' }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium">{{ member.display_name }}</p>
+                                    <p class="text-xs text-gray-500">@{{ member.nickname or 'user' }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden Audio -->
+    <audio id="roomAudio" class="hidden"></audio>
+    
+    <script>
+        // ============================================================
+        // ROOM STATE
+        // ============================================================
+        const roomId = '{{ room.id }}';
+        const isMember = {{ 'true' if is_member else 'false' }};
+        const currentUser = {{ current_user|tojson|safe }};
+        
+        const socket = io();
+        const audio = document.getElementById('roomAudio');
+        const playBtn = document.getElementById('roomPlayBtn');
+        const progressFill = document.getElementById('roomProgressFill');
+        const progressContainer = document.getElementById('roomProgressContainer');
+        const currentTimeEl = document.getElementById('roomCurrentTime');
+        const durationEl = document.getElementById('roomDuration');
+        const trackTitle = document.getElementById('roomTrackTitle');
+        const trackArtist = document.getElementById('roomTrackArtist');
+        const coverImg = document.getElementById('roomCoverImg');
+        const coverPlaceholder = document.getElementById('roomCoverPlaceholder');
+        const queueList = document.getElementById('queueList');
+        const queueCount = document.getElementById('queueCount');
+        const memberCount = document.getElementById('memberCount');
+        const membersList = document.getElementById('membersList');
+        
+        let isPlaying = false;
+        let currentTrackId = null;
+        let isSeeking = false;
+        
+        // ============================================================
+        // SOCKET EVENTS
+        // ============================================================
+        socket.on('connect', function() {
+            console.log('Socket connected');
+            if (isMember) {
+                socket.emit('join_room', { room_id: roomId });
+            }
+        });
+        
+        socket.on('room_joined', function(data) {
+            console.log('Joined room:', data);
+            updateMemberList();
+        });
+        
+        socket.on('room_state', function(data) {
+            console.log('Room state:', data);
+            if (data.current_track) {
+                updateTrack(data.current_track);
+                if (data.current_time) audio.currentTime = data.current_time;
+                if (data.is_playing) {
+                    audio.play();
+                    playBtn.innerHTML = '<i class="fas fa-pause text-xl"></i>';
+                    isPlaying = true;
+                }
+            }
+        });
+        
+        socket.on('track_changed', function(data) {
+            console.log('Track changed:', data);
+            if (data.track) {
+                updateTrack(data.track);
+                audio.currentTime = data.current_time || 0;
+                if (data.is_playing) {
+                    audio.play();
+                    playBtn.innerHTML = '<i class="fas fa-pause text-xl"></i>';
+                    isPlaying = true;
+                }
+            }
+        });
+        
+        socket.on('queue_updated', function(queue) {
+            console.log('Queue updated:', queue);
+            renderQueue(queue);
+        });
+        
+        socket.on('playback_sync', function(data) {
+            if (!isSeeking) {
+                audio.currentTime = data.current_time;
+                if (data.is_playing && audio.paused) {
+                    audio.play();
+                    playBtn.innerHTML = '<i class="fas fa-pause text-xl"></i>';
+                    isPlaying = true;
+                } else if (!data.is_playing && !audio.paused) {
+                    audio.pause();
+                    playBtn.innerHTML = '<i class="fas fa-play text-xl"></i>';
+                    isPlaying = false;
+                }
+            }
+        });
+        
+        socket.on('member_update', function(data) {
+            updateMemberList();
+        });
+        
+        // ============================================================
+        // PLAYER FUNCTIONS
+        // ============================================================
+        function updateTrack(track) {
+            currentTrackId = track.id;
+            trackTitle.textContent = track.title;
+            trackArtist.textContent = track.artist;
+            
+            if (track.cover_filename) {
+                coverImg.src = '/uploads/' + track.cover_filename;
+                coverImg.classList.remove('hidden');
+                coverPlaceholder.classList.add('hidden');
+            } else {
+                coverImg.classList.add('hidden');
+                coverPlaceholder.classList.remove('hidden');
+            }
+            
+            audio.src = '/uploads/' + track.filename;
+            audio.load();
+        }
+        
+        function roomTogglePlay() {
+            if (!currentTrackId) return;
+            
+            if (audio.paused) {
+                audio.play();
+                isPlaying = true;
+                playBtn.innerHTML = '<i class="fas fa-pause text-xl"></i>';
+            } else {
+                audio.pause();
+                isPlaying = false;
+                playBtn.innerHTML = '<i class="fas fa-play text-xl"></i>';
+            }
+            
+            socket.emit('sync_playback', {
+                room_id: roomId,
+                current_time: audio.currentTime,
+                is_playing: !audio.paused
+            });
+        }
+        
+        function roomNext() {
+            socket.emit('play_next', { room_id: roomId });
+        }
+        
+        function roomPrev() {
+            // Simple: go to beginning or previous track logic
+            if (audio.currentTime > 3) {
+                audio.currentTime = 0;
+                socket.emit('sync_playback', {
+                    room_id: roomId,
+                    current_time: 0,
+                    is_playing: true
+                });
+            } else {
+                // Could implement previous track logic here
+            }
+        }
+        
+        // ============================================================
+        // QUEUE
+        // ============================================================
+        function renderQueue(queue) {
+            if (!queue || queue.length === 0) {
+                queueList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">Queue is empty</div>';
+                queueCount.textContent = '0 tracks';
+                return;
+            }
+            
+            queueList.innerHTML = queue.map((item, idx) => `
+                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition">
+                    <span class="text-gray-400 text-xs w-5">${idx + 1}</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm truncate">${item.title}</p>
+                        <p class="text-xs text-gray-400 truncate">${item.artist}</p>
+                    </div>
+                    <span class="text-xs text-gray-500">${item.added_by_name || 'Anonymous'}</span>
+                </div>
+            `).join('');
+            queueCount.textContent = queue.length + ' tracks';
+        }
+        
+        // ============================================================
+        // MEMBERS
+        // ============================================================
+        function updateMemberList() {
+            fetch('/api/rooms/' + roomId)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.members) {
+                        membersList.innerHTML = data.members.map(m => `
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#6C63FF] to-[#FF6B6B] flex items-center justify-center text-xs font-bold">
+                                    ${(m.display_name || '?')[0]}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium">${m.display_name}</p>
+                                    <p class="text-xs text-gray-500">@${m.nickname || 'user'}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                        memberCount.textContent = data.members.length;
+                    }
+                });
+        }
+        
+        // ============================================================
+        // AUDIO EVENTS
+        // ============================================================
+        audio.addEventListener('timeupdate', function() {
+            if (audio.duration) {
+                const percent = (audio.currentTime / audio.duration) * 100;
+                progressFill.style.width = percent + '%';
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+            }
+        });
+        
+        audio.addEventListener('loadedmetadata', function() {
+            durationEl.textContent = formatTime(audio.duration);
+        });
+        
+        audio.addEventListener('ended', function() {
+            roomNext();
+        });
+        
+        progressContainer.addEventListener('click', function(e) {
+            if (!audio.duration) return;
+            const rect = this.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = percent * audio.duration;
+            isSeeking = true;
+            socket.emit('sync_playback', {
+                room_id: roomId,
+                current_time: audio.currentTime,
+                is_playing: !audio.paused
+            });
+            setTimeout(() => { isSeeking = false; }, 100);
+        });
+        
+        // ============================================================
+        // UTILITY
+        // ============================================================
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return mins + ':' + (secs < 10 ? '0' : '') + secs;
+        }
+        
+        // ============================================================
+        // KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.code === 'Space') { e.preventDefault(); roomTogglePlay(); }
+        });
+        
+        console.log('🎵 Room loaded:', roomId);
+    </script>
+</body>
+</html>
