@@ -1,0 +1,22 @@
+<!-- Album Card Component -->
+<a href="/album/{{ album.slug or album.id }}" class="bg-white/5 hover:bg-white/10 rounded-xl p-3 transition block group">
+    <div class="aspect-square rounded-lg overflow-hidden bg-white/5">
+        {% if album.cover_filename %}
+            <img src="/uploads/{{ album.cover_filename }}" alt="{{ album.title }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+        {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-[#6C63FF]/20 to-[#FF6B6B]/20 flex items-center justify-center">
+                <i class="fas fa-compact-disc text-4xl text-white/30"></i>
+            </div>
+        {% endif %}
+    </div>
+    <div class="mt-2">
+        <p class="text-white text-sm font-medium truncate">{{ album.title }}</p>
+        <p class="text-gray-400 text-xs truncate">{{ album.display_name or album.nickname }}</p>
+        <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+            <span><i class="far fa-heart mr-0.5"></i> {{ album.likes_count or 0 }}</span>
+            {% if album.is_liked %}
+                <span class="text-[#FF6B6B]"><i class="fas fa-heart"></i></span>
+            {% endif %}
+        </div>
+    </div>
+</a>
