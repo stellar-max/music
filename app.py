@@ -1,4 +1,4 @@
-"""Runs the Flask music app, initializes SQLite, registers API blueprints, and serves Socket.IO."""
+"""Runs the Flask web app, initializes SQLite, and starts the Telegram bot in the same process."""
 
 import os
 import sqlite3
@@ -9,9 +9,11 @@ from werkzeug.security import generate_password_hash
 
 from common import DB_FILE, get_current_user
 
+
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
 
 app = Flask(__name__)
+
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
     "your-secret-key-change-in-production",
@@ -199,10 +201,14 @@ def ensure_valid_db():
 
     try:
         connection = sqlite3.connect(DB_FILE)
-        result = connection.execute("PRAGMA integrity_check").fetchone()
+        result = connection.execute(
+            "PRAGMA integrity_check"
+        ).fetchone()
 
         if not result or result[0] != "ok":
-            raise sqlite3.DatabaseError("SQLite integrity check failed")
+            raise sqlite3.DatabaseError(
+                "SQLite integrity check failed"
+            )
 
     except sqlite3.DatabaseError:
         if connection is not None:
@@ -231,8 +237,14 @@ def init_db():
         ).fetchone()
 
         if admin_exists is None:
-            username = os.environ.get("ADMIN_USERNAME", "admin")
-            password = os.environ.get("ADMIN_PASSWORD", "admin123")
+            username = os.environ.get(
+                "ADMIN_USERNAME",
+                "admin",
+            )
+            password = os.environ.get(
+                "ADMIN_PASSWORD",
+                "admin123",
+            )
 
             connection.execute(
                 """
@@ -297,6 +309,7 @@ def index():
             """
 
             search_term = f"%{search_query}%"
+
             tracks_params.extend(
                 (
                     search_term,
@@ -322,7 +335,7 @@ def index():
             track = dict(row)
 
             if current_user:
-                track["is_liked"] = cursor.execute(
+                liked = cursor.execute(
                     """
                     SELECT 1
                     FROM likes
@@ -334,7 +347,9 @@ def index():
                         current_user["id"],
                         track["id"],
                     ),
-                ).fetchone() is not None
+                ).fetchone()
+
+                track["is_liked"] = liked is not None
             else:
                 track["is_liked"] = False
 
@@ -365,6 +380,7 @@ def index():
             """
 
             search_term = f"%{search_query}%"
+
             albums_params.extend(
                 (
                     search_term,
@@ -390,7 +406,7 @@ def index():
             album = dict(row)
 
             if current_user:
-                album["is_liked"] = cursor.execute(
+                liked = cursor.execute(
                     """
                     SELECT 1
                     FROM album_likes
@@ -402,7 +418,9 @@ def index():
                         current_user["id"],
                         album["id"],
                     ),
-                ).fetchone() is not None
+                ).fetchone()
+
+                album["is_liked"] = liked is not None
             else:
                 album["is_liked"] = False
 
@@ -454,6 +472,32 @@ app.register_blueprint(
 )
 
 
+bot_thread = None
+
+
+def start_integrated_bot():
+    global bot_thread
+
+    if not os.environ.get("BOT_TOKEN"):
+        print(
+            "BOT_TOKEN is missing. "
+            "Web app will run without the Telegram bot."
+        )
+        return
+
+    try:
+        from bot import start_bot_background
+
+        bot_thread = start_bot_background(socketio)
+        print("Telegram bot started inside the web process.")
+
+    except Exception as error:
+        print(f"Failed to start Telegram bot: {error}")
+
+
+start_integrated_bot()
+
+
 if __name__ == "__main__":
     socketio.run(
         app,
@@ -468,7 +512,7 @@ if __name__ == "__main__":
         port=int(
             os.environ.get(
                 "PORT",
-                "5024",
             )
         ),
-    )
+        allow_unsafe_werkzeug=True,
+)
