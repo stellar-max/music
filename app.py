@@ -1,9 +1,9 @@
-"""Runs the Flask web app, initializes SQLite, and starts the Telegram bot in the same process."""
+"""Runs the Flask music app, initializes SQLite, registers APIs, and starts the Telegram bot."""
 
 import os
 import sqlite3
 
-from flask import Flask, render_template, request
+from flask import Flask, redirect, render_template, request, url_for
 from flask_socketio import SocketIO
 from werkzeug.security import generate_password_hash
 
@@ -14,17 +14,22 @@ UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY",
-    "your-secret-key-change-in-production",
+app.config.update(
+    SECRET_KEY=os.environ.get(
+        "SECRET_KEY",
+        "your-secret-key-change-in-production",
+    ),
+    UPLOAD_FOLDER=UPLOAD_FOLDER,
+    DB_FILE=DB_FILE,
+    MAX_CONTENT_LENGTH=100 * 1024 * 1024,
 )
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["DB_FILE"] = DB_FILE
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-db_directory = os.path.dirname(os.path.abspath(DB_FILE))
-os.makedirs(db_directory, exist_ok=True)
+database_directory = os.path.dirname(
+    os.path.abspath(DB_FILE)
+)
+os.makedirs(database_directory, exist_ok=True)
 
 socketio = SocketIO(
     app,
@@ -94,8 +99,12 @@ CREATE TABLE IF NOT EXISTS album_tracks (
     album_id INTEGER,
     track_id INTEGER,
     sort_order INTEGER DEFAULT 0,
-    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
-    FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE,
+    FOREIGN KEY (album_id)
+        REFERENCES albums(id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (track_id)
+        REFERENCES tracks(id)
+        ON DELETE CASCADE,
     UNIQUE (album_id, track_id)
 );
 
@@ -142,7 +151,8 @@ CREATE TABLE IF NOT EXISTS rooms (
     is_playing INTEGER DEFAULT 0,
     current_time REAL DEFAULT 0.0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (host_id) REFERENCES users(id)
+    FOREIGN KEY (host_id) REFERENCES users(id),
+    FOREIGN KEY (current_track_id) REFERENCES tracks(id)
 );
 
 CREATE TABLE IF NOT EXISTS room_members (
@@ -150,7 +160,9 @@ CREATE TABLE IF NOT EXISTS room_members (
     room_id TEXT,
     user_id INTEGER,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id)
+        REFERENCES rooms(id)
+        ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id),
     UNIQUE (room_id, user_id)
 );
@@ -162,7 +174,9 @@ CREATE TABLE IF NOT EXISTS room_queue (
     added_by_id INTEGER,
     sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+    FOREIGN KEY (room_id)
+        REFERENCES rooms(id)
+        ON DELETE CASCADE,
     FOREIGN KEY (track_id) REFERENCES tracks(id),
     FOREIGN KEY (added_by_id) REFERENCES users(id)
 );
@@ -190,17 +204,35 @@ ON room_members(room_id);
 
 CREATE INDEX IF NOT EXISTS idx_room_queue_room
 ON room_queue(room_id);
+
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_expiry
+ON auth_tokens(expires_at);
 """
 
 
-def ensure_valid_db():
+def get_database_connection() -> sqlite3.Connection:
+    connection = sqlite3.connect(
+        DB_FILE,
+        timeout=30,
+    )
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.execute("PRAGMA busy_timeout = 30000")
+    return connection
+
+
+def ensure_valid_db() -> None:
     if not os.path.exists(DB_FILE):
         return
 
     connection = None
 
     try:
-        connection = sqlite3.connect(DB_FILE)
+        connection = sqlite3.connect(
+            DB_FILE,
+            timeout=30,
+        )
+
         result = connection.execute(
             "PRAGMA integrity_check"
         ).fetchone()
@@ -216,32 +248,40 @@ def ensure_valid_db():
             connection = None
 
         os.remove(DB_FILE)
-        print(f"Corrupt database removed: {DB_FILE}")
+
+        print(
+            f"Corrupt database removed: {DB_FILE}",
+            flush=True,
+        )
 
     finally:
         if connection is not None:
             connection.close()
 
 
-def init_db():
+def init_db() -> None:
     ensure_valid_db()
 
-    connection = sqlite3.connect(DB_FILE)
+    connection = get_database_connection()
 
     try:
-        connection.execute("PRAGMA foreign_keys = ON")
         connection.executescript(SCHEMA)
 
         admin_exists = connection.execute(
-            "SELECT 1 FROM admins LIMIT 1"
+            """
+            SELECT 1
+            FROM admins
+            LIMIT 1
+            """
         ).fetchone()
 
         if admin_exists is None:
-            username = os.environ.get(
+            admin_username = os.environ.get(
                 "ADMIN_USERNAME",
                 "admin",
             )
-            password = os.environ.get(
+
+            admin_password = os.environ.get(
                 "ADMIN_PASSWORD",
                 "admin123",
             )
@@ -255,13 +295,26 @@ def init_db():
                 VALUES (?, ?)
                 """,
                 (
-                    username,
-                    generate_password_hash(password),
+                    admin_username,
+                    generate_password_hash(
+                        admin_password
+                    ),
                 ),
             )
 
+        connection.execute(
+            """
+            DELETE FROM auth_tokens
+            WHERE expires_at <= CURRENT_TIMESTAMP
+            """
+        )
+
         connection.commit()
-        print("Database initialized successfully.")
+
+        print(
+            "Database initialized successfully.",
+            flush=True,
+        )
 
     except Exception:
         connection.rollback()
@@ -274,14 +327,17 @@ def init_db():
 init_db()
 
 
-@app.route("/")
-def index():
-    connection = sqlite3.connect(DB_FILE)
-    connection.row_factory = sqlite3.Row
+def load_library():
+    connection = get_database_connection()
 
     try:
         cursor = connection.cursor()
-        search_query = request.args.get("q", "").strip()
+
+        search_query = request.args.get(
+            "q",
+            "",
+        ).strip()
+
         current_user = get_current_user()
 
         tracks_query = """
@@ -290,11 +346,13 @@ def index():
                 u.nickname,
                 u.display_name,
                 u.avatar_url,
-                COALESCE(t.plays_count, 0) AS plays_count,
-                COALESCE(t.likes_count, 0) AS likes_count
+                COALESCE(t.plays_count, 0)
+                    AS plays_count,
+                COALESCE(t.likes_count, 0)
+                    AS likes_count
             FROM tracks AS t
             JOIN users AS u
-                ON t.user_id = u.id
+                ON u.id = t.user_id
             WHERE t.hidden = 0
         """
 
@@ -324,14 +382,14 @@ def index():
             LIMIT 50
         """
 
-        cursor.execute(
+        tracks_rows = cursor.execute(
             tracks_query,
             tracks_params,
-        )
+        ).fetchall()
 
         tracks = []
 
-        for row in cursor.fetchall():
+        for row in tracks_rows:
             track = dict(row)
 
             if current_user:
@@ -350,6 +408,7 @@ def index():
                 ).fetchone()
 
                 track["is_liked"] = liked is not None
+
             else:
                 track["is_liked"] = False
 
@@ -361,11 +420,13 @@ def index():
                 u.nickname,
                 u.display_name,
                 u.avatar_url,
-                COALESCE(a.plays_count, 0) AS plays_count,
-                COALESCE(a.likes_count, 0) AS likes_count
+                COALESCE(a.plays_count, 0)
+                    AS plays_count,
+                COALESCE(a.likes_count, 0)
+                    AS likes_count
             FROM albums AS a
             JOIN users AS u
-                ON a.user_id = u.id
+                ON u.id = a.user_id
             WHERE a.hidden = 0
         """
 
@@ -395,14 +456,14 @@ def index():
             LIMIT 50
         """
 
-        cursor.execute(
+        albums_rows = cursor.execute(
             albums_query,
             albums_params,
-        )
+        ).fetchall()
 
         albums = []
 
-        for row in cursor.fetchall():
+        for row in albums_rows:
             album = dict(row)
 
             if current_user:
@@ -421,22 +482,90 @@ def index():
                 ).fetchone()
 
                 album["is_liked"] = liked is not None
+
             else:
                 album["is_liked"] = False
 
             albums.append(album)
 
-        return render_template(
-            "unified.html",
-            tracks=tracks,
-            albums=albums,
-            current_user=current_user,
-            search_query=search_query,
-            mode="library",
-        )
+        return {
+            "tracks": tracks,
+            "albums": albums,
+            "current_user": current_user,
+            "search_query": search_query,
+        }
 
     finally:
         connection.close()
+
+
+@app.route("/")
+def index():
+    library = load_library()
+
+    requested_view = request.args.get(
+        "view",
+        "library",
+    ).strip()
+
+    return render_template(
+        "unified.html",
+        tracks=library["tracks"],
+        albums=library["albums"],
+        current_user=library["current_user"],
+        search_query=library["search_query"],
+        mode=requested_view,
+    )
+
+
+@app.route("/app")
+def app_alias():
+    return redirect(
+        url_for("index")
+    )
+
+
+@app.route("/rooms")
+def rooms_alias():
+    return redirect(
+        url_for(
+            "index",
+            view="rooms",
+        )
+    )
+
+
+@app.route("/room/<string:room_id>")
+def room_alias(room_id):
+    return redirect(
+        url_for(
+            "index",
+            view="room",
+            room_id=room_id,
+        )
+    )
+
+
+@app.route("/user/<string:nickname>")
+def user_library_alias(nickname):
+    return redirect(
+        url_for(
+            "index",
+            view="library",
+            user=nickname,
+        )
+    )
+
+
+@app.route("/health")
+def health():
+    return {
+        "status": "ok",
+        "database": os.path.exists(DB_FILE),
+        "bot_enabled": bool(
+            os.environ.get("BOT_TOKEN")
+        ),
+    }, 200
 
 
 from routes.auth import auth_bp
@@ -475,44 +604,67 @@ app.register_blueprint(
 bot_thread = None
 
 
-def start_integrated_bot():
+def start_integrated_bot() -> None:
     global bot_thread
 
-    if not os.environ.get("BOT_TOKEN"):
+    bot_token = os.environ.get(
+        "BOT_TOKEN",
+        "",
+    ).strip()
+
+    if not bot_token:
         print(
             "BOT_TOKEN is missing. "
-            "Web app will run without the Telegram bot."
+            "Web app will run without Telegram bot.",
+            flush=True,
         )
         return
 
     try:
         from bot import start_bot_background
 
-        bot_thread = start_bot_background(socketio)
-        print("Telegram bot started inside the web process.")
+        bot_thread = start_bot_background(
+            socketio
+        )
+
+        print(
+            "Telegram bot started inside "
+            "the web worker process.",
+            flush=True,
+        )
 
     except Exception as error:
-        print(f"Failed to start Telegram bot: {error}")
+        print(
+            f"Failed to start Telegram bot: {error}",
+            flush=True,
+        )
 
 
 start_integrated_bot()
 
 
 if __name__ == "__main__":
+    debug_mode = os.environ.get(
+        "FLASK_DEBUG",
+        "false",
+    ).lower() == "true"
+
+    host = os.environ.get(
+        "HOST",
+        "0.0.0.0",
+    )
+
+    port = int(
+        os.environ.get(
+            "PORT",
+            "5024",
+        )
+    )
+
     socketio.run(
         app,
-        debug=os.environ.get(
-            "FLASK_DEBUG",
-            "false",
-        ).lower() == "true",
-        host=os.environ.get(
-            "HOST",
-            "0.0.0.0",
-        ),
-        port=int(
-            os.environ.get(
-                "PORT",
-            )
-        ),
+        debug=debug_mode,
+        host=host,
+        port=port,
         allow_unsafe_werkzeug=True,
-)
+        )
