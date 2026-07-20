@@ -1,26 +1,43 @@
-# bot_config.py - Telegram Bot Configuration
+"""Stores Telegram bot settings, runtime identity, and reusable messages."""
 
-import os
 import logging
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 
-# Configure logging
+
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
+
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class BotConfig:
-    """Bot configuration settings"""
-    BOT_TOKEN: str = os.environ.get('BOT_TOKEN', '')
-    WEBAPP_URL: str = os.environ.get('WEBAPP_URL', 'http://localhost:5024')
-    DB_FILE: str = 'music.db'
-    
-    # Bot messages
+    BOT_TOKEN: str = field(
+        default_factory=lambda: os.environ.get("BOT_TOKEN", "")
+    )
+
+    WEBAPP_URL: str = field(
+        default_factory=lambda: os.environ.get(
+            "WEBAPP_URL",
+            "http://localhost:5024",
+        ).rstrip("/")
+    )
+
+    DB_FILE: str = field(
+        default_factory=lambda: os.environ.get(
+            "DB_FILE",
+            "music.db",
+        )
+    )
+
+    BOT_NAME: str = "Music Player"
+    BOT_USERNAME: str = ""
+
     WELCOME_TEXT: str = """
-🎵 **Welcome to SimpleWebPlayer, {first_name}!**
+🎵 **Welcome to {bot_name}, {first_name}!**
 
 Your personal music streaming hub with:
 • 🎤 **Synced LRC Lyrics**
@@ -28,45 +45,74 @@ Your personal music streaming hub with:
 • 👥 **Collaborative Rooms**
 • 📱 **Telegram Integration**
 
-🔑 **Click below to open the web player and start listening!**
-    """
-    
+🔑 **Open the player below to start listening.**
+""".strip()
+
     HELP_TEXT: str = """
-🤖 **SimpleWebPlayer Bot Help**
+🤖 **{bot_name} Help**
 
 **Commands:**
-• `/start` - Welcome and login
-• `/login` - Get web player login link
-• `/play <song>` - Play a song on your web player
-• `/room` - Manage collaborative rooms
-• `/help` - Show this help
+• `/start` — Open the player
+• `/login` — Generate a login link
+• `/play <song>` — Search or play a track
+• `/room` — Manage listening rooms
+• `/help` — Show this message
 
-**Features:**
-• 🎵 **Web Player** - Stream your music with synced lyrics
-• 👥 **Rooms** - Listen together with friends in real-time
-• 📱 **Telegram Integration** - Control playback from your phone
+🔗 **Web Player:** {webapp_url}
+""".strip()
 
-🔗 **Web Player:** {WEBAPP_URL}
-    """
-    
     PLAY_USAGE: str = """
 🎵 **Usage:** `/play <song name>`
 
-**Example:** `/play Bohemian Rhapsody`
-
-You can also search by artist:
+**Examples:**
+• `/play Bohemian Rhapsody`
 • `/play Queen Bohemian Rhapsody`
-• `/play artist:Lady Gaga`
-    """
-    
+""".strip()
+
     ROOM_TEXT: str = """
 🎧 **Room Management**
 
-Create or join collaborative listening rooms to enjoy music together!
+Create or join collaborative listening rooms.
 
-• 📋 **List Rooms** - See all active rooms
-• ➕ **Create Room** - Create a new room
-• 🔗 **Join Room** - Join an existing room
-    """
+• 📋 **List Rooms**
+• ➕ **Create Room**
+• 🔗 **Join Room**
+""".strip()
+
+    def set_bot_identity(
+        self,
+        name: str,
+        username: str,
+    ) -> None:
+        self.BOT_NAME = name or "Music Player"
+        self.BOT_USERNAME = (username or "").lstrip("@")
+
+        logger.info(
+            "Bot identity loaded: %s (@%s)",
+            self.BOT_NAME,
+            self.BOT_USERNAME or "unknown",
+        )
+
+    @property
+    def mini_app_url(self) -> str:
+        if not self.BOT_USERNAME:
+            return ""
+
+        return f"https://t.me/{self.BOT_USERNAME}?startapp"
+
+    def mini_app_deep_link(
+        self,
+        start_param: str = "",
+    ) -> str:
+        if not self.BOT_USERNAME:
+            return self.WEBAPP_URL
+
+        link = f"https://t.me/{self.BOT_USERNAME}?startapp"
+
+        if start_param:
+            link += f"={start_param}"
+
+        return link
+
 
 config = BotConfig()
