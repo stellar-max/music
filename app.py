@@ -7,8 +7,9 @@ from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 from werkzeug.security import generate_password_hash
 
-from common import DB_FILE, UPLOAD_FOLDER, get_current_user
+from common import DB_FILE, get_current_user
 
+UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get(
