@@ -6,9 +6,9 @@
 Stream, organize, and enjoy music with friends - all in one place.
 
 <p align="center">
-    <a href="https://github.com/superboygisan/simple_webm/stargazers"><img src="https://img.shields.io/github/stars/superboygisan/simple_webm?color=blueviolet&logo=github&style=for-the-badge" alt="Stars"/></a>
-    <a href="https://github.com/superboygisan/simple_webm/network/members"><img src="https://img.shields.io/github/forks/superboygisan/simple_webm?color=blueviolet&logo=github&style=for-the-badge" alt="Forks"/></a>
-    <a href="https://github.com/superboygisan/simple_webm/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"/></a>
+    <a href="https://github.com//stellar-max"><img src="https://img.shields.io/github/stars/stellar-max/music?color=blueviolet&logo=github&style=for-the-badge" alt="Stars"/></a>
+    <a href="https://github.com/stellar-max/music/network/members"><img src="https://img.shields.io/github/forks/stellar-max/music?color=blueviolet&logo=github&style=for-the-badge" alt="Forks"/></a>
+    <a href="https://github.com/stellar-max/music/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"/></a>
     <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Written%20in-Python-blue?style=for-the-badge&logo=python" alt="Python"/></a>
     <a href="https://flask.palletsprojects.com/"><img src="https://img.shields.io/badge/Built%20with-Flask-red?style=for-the-badge&logo=flask" alt="Flask"/></a>
     <a href="https://socket.io/"><img src="https://img.shields.io/badge/Powered%20by-Socket.IO-010101?style=for-the-badge&logo=socket.io" alt="Socket.IO"/></a>
@@ -41,11 +41,11 @@ Stream, organize, and enjoy music with friends - all in one place.
 
 Deploying on Render is easy! Just click the button below:
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/superboygisan/simple_webm)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/stellar-max/music)
 
 ### 💙 Deploy on Heroku (Paid)
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/superboygisan/simple_webm)
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/stellar-max/music)
 
 ### 💻 VPS / Local Deployment
 
@@ -53,8 +53,8 @@ Follow these steps to host the app on your own server:
 
 1. **Clone the Repo:**
    ```bash
-   git clone https://github.com/superboygisan/simple_webm.git
-   cd simple_webm
+   git clone https://github.com/stellar-max/music.git
+   cd music
  
    <hr>
 ⚙️ Configuration
@@ -69,18 +69,3 @@ PORT	Port to Run On (Default: 5024)
 DATABASE_URL	PostgreSQL Database URL (Optional)
 <hr>
 <hr>
-👨‍💻 Connect With Us
-Stay updated and get support through our official channels:
-
-📢 Channel: @II_SB_SIMPLE_II
-
-🎧 Support: @II_SB_SIMPLE_II
-
-👤 Developer: @II_SB_SIMPLE_II
-
-🐙 GitHub: @superboygisan
-
-<hr>
-
-<div align="center"> <b>Made with ❤️ by <a href="https://github.com/superboygisan">@superboygisan</a></b> <br> <b>Owner:</b> <a href="https://t.me/II_SB_SIMPLE_II">@II_SB_SIMPLE_II</a> </div>
-
