@@ -20,4 +20,4 @@ ENV FLASK_DEBUG=False
 ENV HOST=0.0.0.0
 ENV PYTHONUNBUFFERED=1
 
-CMD ["sh", "-c", "exec gunicorn --worker-class eventlet --workers 1 --bind 0.0.0.0:$PORT --timeout 120 app:app"]
+CMD ["sh", "-c", "exec gunicorn --worker-class gthread --workers 1 --threads 8 --bind 0.0.0.0:$PORT --timeout 120 app:app"]
